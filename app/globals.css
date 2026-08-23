@@ -93,3 +93,105 @@ button, input { font: inherit; } button, a { -webkit-tap-highlight-color: transp
   color: var(--ink);
   cursor: pointer;
 }
+.request-modal {
+  width: min(540px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+
+.request-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.request-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.request-form input,
+.request-form select,
+.request-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.request-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.request-form input:focus,
+.request-form select:focus,
+.request-form textarea:focus {
+  border-color: #16866f;
+  outline: 3px solid rgba(22, 134, 111, 0.12);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.form-actions .secondary-button {
+  margin-top: 0;
+}
+
+.request-success {
+  margin-top: 24px;
+}
+
+.request-success h3 {
+  margin: 0 0 8px;
+}
+
+.request-success p {
+  margin-bottom: 24px;
+  color: var(--muted);
+}
+.modal-backdrop {
+  z-index: 9999;
+  place-items: center;
+  overflow: hidden;
+}
+
+.request-modal {
+  box-sizing: border-box;
+  width: min(620px, 100%);
+  max-height: calc(100vh - 32px);
+  margin: 0;
+  overflow-y: auto;
+}
+
+.request-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.request-form label:last-of-type,
+.form-actions {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 620px) {
+  .request-form {
+    grid-template-columns: 1fr;
+  }
+
+  .request-form label:last-of-type,
+  .form-actions {
+    grid-column: auto;
+  }
+}
