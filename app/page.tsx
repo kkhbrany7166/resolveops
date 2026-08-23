@@ -80,7 +80,7 @@ export default function Home() {
         </header>
 
         <div className="content">
-          <section className="page-heading"><div><p className="eyebrow">Sunday, 23 August</p><h1>Good evening, Khalid</h1><p>Here is what needs your attention across your facilities.</p></div><div className="live-status"><span></span> Live operations</div></section>
+          <section className="page-heading"><div><p className="eyebrow">Sunday, 23 August</p><h1>Good evening, Khalid</h1><p>Monitor requests, technicians, and SLA performance from one place.</p></div><div className="live-status"><span></span> Live operations</div></section>
 
           <section className="metrics" aria-label="Operations summary">
             <MetricCard label="Active requests" value="28" detail="+4 today" icon="ticket" tone="teal" />
