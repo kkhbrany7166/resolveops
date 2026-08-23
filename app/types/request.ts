@@ -16,9 +16,10 @@ export const requestPriorities = [
 export const requestStatuses = [
   "new",
   "assigned",
-  "in-progress",
-  "on-hold",
+  "in_progress",
+  "on_hold",
   "resolved",
+  "closed",
 ] as const;
 
 export type RequestCategory = (typeof requestCategories)[number];
@@ -26,18 +27,22 @@ export type RequestPriority = (typeof requestPriorities)[number];
 export type RequestStatus = (typeof requestStatuses)[number];
 
 export interface ServiceRequest {
-  id: number;
-  requestNumber: string;
+  id: string;
+  organizationId: string;
+  requesterId: string;
+  assigneeId: string | null;
   title: string;
-  site: string;
+  description: string;
   category: RequestCategory;
   priority: RequestPriority;
-  description: string;
   status: RequestStatus;
+  location: string;
+  dueAt: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export type CreateServiceRequestInput = Pick<
   ServiceRequest,
-  "title" | "site" | "category" | "priority" | "description"
+  "title" | "description" | "category" | "priority" | "location"
 >;
