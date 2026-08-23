@@ -1,3 +1,4 @@
+import NewRequestButton from "./components/NewRequestButton";
 type IconName =
   | "grid" | "ticket" | "team" | "building" | "report" | "settings"
   | "search" | "bell" | "plus" | "arrow" | "clock" | "warning"
@@ -76,7 +77,7 @@ export default function Home() {
         <header className="topbar">
           <div className="mobile-brand"><div className="brand-mark"><span></span><span></span><span></span></div><strong>WaslOps</strong></div>
           <label className="search-box"><Icon name="search" size={17} /><input type="search" placeholder="Search requests, sites, or assets" aria-label="Search" /><kbd>⌘ K</kbd></label>
-          <div className="top-actions"><button className="language" aria-label="Switch language">EN <span>/ العربية</span></button><button className="icon-button" aria-label="Notifications"><Icon name="bell" /><i></i></button><button className="primary-button"><Icon name="plus" size={17} /> New request</button></div>
+          <div className="top-actions"><button className="language" aria-label="Switch language">EN <span>/ العربية</span></button><button className="icon-button" aria-label="Notifications"><Icon name="bell" /><i></i></button><NewRequestButton /></div>
         </header>
 
         <div className="content">
