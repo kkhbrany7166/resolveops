@@ -62,7 +62,7 @@ export default function Home() {
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><div className="brand-mark"><span></span><span></span><span></span></div><div><strong>WaslOps</strong><small>Facility operations</small></div></div>
+        <div className="brand"><div className="brand-mark"><span></span><span></span><span></span></div><div><strong>ResolveOps</strong><small>Service operations</small></div></div>
         <nav aria-label="Primary navigation">
           <p className="nav-label">Workspace</p>
           {navItems.map((item) => <a href={item.active ? "#overview" : "#active-requests"} className={item.active ? "active" : ""} key={item.label}><Icon name={item.icon} /><span>{item.label}</span>{item.label === "Requests" && <em>28</em>}</a>)}
@@ -75,7 +75,7 @@ export default function Home() {
 
       <section className="main-panel" id="overview">
         <header className="topbar">
-          <div className="mobile-brand"><div className="brand-mark"><span></span><span></span><span></span></div><strong>WaslOps</strong></div>
+          <div className="mobile-brand"><div className="brand-mark"><span></span><span></span><span></span></div><strong>ResolveOps</strong></div>
           <label className="search-box"><Icon name="search" size={17} /><input type="search" placeholder="Search requests, sites, or assets" aria-label="Search" /><kbd>⌘ K</kbd></label>
           <div className="top-actions"><button className="language" aria-label="Switch language">EN <span>/ العربية</span></button><button className="icon-button" aria-label="Notifications"><Icon name="bell" /><i></i></button><NewRequestButton /></div>
         </header>

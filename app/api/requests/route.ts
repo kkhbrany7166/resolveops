@@ -8,7 +8,7 @@ import {
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { validateCreateRequest } from "../../lib/validate-request";
 
-const ORGANIZATION_ID = "org-waslops-demo";
+const ORGANIZATION_ID = "org-resolveops-demo";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const db = getDb();
     const authenticatedUser = await getChatGPTUser();
 
-    const email = authenticatedUser?.email ?? "demo@waslops.local";
+    const email = authenticatedUser?.email ?? "demo@resolveops.local";
     const fullName =
       authenticatedUser?.fullName ??
       authenticatedUser?.displayName ??
@@ -50,8 +50,8 @@ export async function POST(request: Request) {
       .insert(organizations)
       .values({
         id: ORGANIZATION_ID,
-        name: "WaslOps",
-        slug: "waslops-demo",
+        name: "ResolveOps",
+        slug: "resolveops-demo",
       })
       .onConflictDoNothing();
 

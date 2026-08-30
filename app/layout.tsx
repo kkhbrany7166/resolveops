@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WaslOps | Facility Operations",
+  title: "ResolveOps | Service Operations",
   description:
     "A bilingual field service platform for managing facility requests, technicians, assets, and service-level performance.",
   other: {

@@ -9,14 +9,14 @@ export async function GET() {
 
     return Response.json({
       status: healthy ? "healthy" : "degraded",
-      service: "waslops-api",
+      service: "resolveops-api",
       database: healthy ? "connected" : "unavailable",
       timestamp: new Date().toISOString(),
     }, { status: healthy ? 200 : 503 });
   } catch (error) {
     return Response.json({
       status: "unhealthy",
-      service: "waslops-api",
+      service: "resolveops-api",
       database: "unavailable",
       error: error instanceof Error ? error.message : "Unexpected error",
       timestamp: new Date().toISOString(),
