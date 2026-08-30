@@ -46,3 +46,5 @@ next-env.d.ts
 ai-service/.venv/
 ai-service/.env
 ai-service/**/__pycache__/
+
+!ai-service/.env.example

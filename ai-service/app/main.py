@@ -1,4 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+
+from app.models import (
+    AnalyzeRequestInput,
+    ServiceRequestAnalysis,
+)
+from app.services.classifier import analyze_service_request
 
 
 app = FastAPI(
@@ -14,3 +20,33 @@ def health_check():
         "status": "healthy",
         "service": "resolveops-ai",
     }
+
+
+@app.post(
+    "/analyze-request",
+    response_model=ServiceRequestAnalysis,
+)
+def analyze_request(
+    request: AnalyzeRequestInput,
+):
+    try:
+        return analyze_service_request(
+            description=request.description,
+            location=request.location,
+        )
+
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+        ) from error
+
+    except Exception as error:
+        print(
+            f"ResolveOps AI analysis failed: {error}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to analyze service request.",
+        ) from error
