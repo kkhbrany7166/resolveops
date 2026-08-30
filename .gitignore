@@ -41,3 +41,8 @@ next-env.d.ts
 /outputs/
 /work/
 *.tsbuildinfo
+
+# ResolveOps AI service
+ai-service/.venv/
+ai-service/.env
+ai-service/**/__pycache__/
