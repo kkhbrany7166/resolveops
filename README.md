@@ -192,11 +192,31 @@ The Next.js AI bridge defaults to `http://127.0.0.1:8000` and can be pointed els
 - `POST /analyze-request` - returns structured request classification.
 - `POST /copilot` - returns a structured grounded operations answer.
 
-## Screenshots
+## Product Screenshots
 
-Screenshots are planned under `docs/screenshots/`. Image links are intentionally omitted until the actual files are added, so the public README does not contain broken images.
+### Dashboard
 
-See [docs/screenshots/README.md](docs/screenshots/README.md) for the screenshot checklist.
+Live operational dashboard with active requests, SLA visibility, monthly resolution metrics, and technician capacity.
+
+![ResolveOps dashboard](docs/screenshots/dashboard.png)
+
+### AI Request Intelligence
+
+Natural-language service requests are analyzed through the FastAPI/OpenAI service and converted into structured operational fields.
+
+![ResolveOps AI request intelligence modal](docs/screenshots/ai-request-analysis.png)
+
+### Request Management
+
+Operations managers can assign technicians and manage request status through the service lifecycle.
+
+![ResolveOps request management modal](docs/screenshots/request-management.png)
+
+### AI Operations Copilot
+
+Multi-turn operations Copilot grounded in live request, technician, SLA, and recent activity data.
+
+![ResolveOps AI Operations Copilot](docs/screenshots/operations-copilot.png)
 
 ## Current Scope & Roadmap
 
