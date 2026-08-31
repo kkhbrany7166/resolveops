@@ -3,11 +3,17 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
 
 import NewRequestButton from "./components/NewRequestButton";
+
+
+const OPERATIONS_TIME_ZONE =
+  "Asia/Riyadh";
+
 
 type IconName =
   | "grid"
@@ -25,15 +31,23 @@ type IconName =
   | "check"
   | "pulse";
 
+
 type ApiRequest = {
   id: string;
   organizationId: string;
   requesterId: string;
   assigneeId: string | null;
+
   title: string;
   description: string;
   category: string;
-  priority: "low" | "medium" | "high" | "critical";
+
+  priority:
+    | "low"
+    | "medium"
+    | "high"
+    | "critical";
+
   status:
     | "new"
     | "assigned"
@@ -41,29 +55,56 @@ type ApiRequest = {
     | "on_hold"
     | "resolved"
     | "closed";
+
   location: string;
+
   dueAt: string | null;
+
   createdAt: string;
   updatedAt: string;
 };
 
+
+type DashboardMetrics = {
+  activeRequests: number;
+  dueToday: number;
+  slaAtRisk: number;
+  resolvedThisMonth: number;
+};
+
+
 type RequestsResponse = {
   requests: ApiRequest[];
   count: number;
+  metrics: DashboardMetrics;
 };
+
 
 type RequestRow = {
   id: string;
   title: string;
   location: string;
   category: string;
-  priority: "Critical" | "High" | "Medium" | "Low";
-  status: "New" | "Assigned" | "In progress" | "On hold";
+
+  priority:
+    | "Critical"
+    | "High"
+    | "Medium"
+    | "Low";
+
+  status:
+    | "New"
+    | "Assigned"
+    | "In progress"
+    | "On hold";
+
   assignee: string;
   initials: string;
+
   sla: string;
-  risk?: boolean;
+  risk: boolean;
 };
+
 
 const navItems: {
   label: string;
@@ -93,16 +134,35 @@ const navItems: {
   },
 ];
 
-function formatCategory(category: string) {
+
+function parseDbDate(
+  value: string,
+) {
+  if (value.includes("T")) {
+    return new Date(value);
+  }
+
+  return new Date(
+    `${value.replace(" ", "T")}Z`,
+  );
+}
+
+
+function formatCategory(
+  category: string,
+) {
   if (category === "hvac") {
     return "HVAC";
   }
 
   return (
-    category.charAt(0).toUpperCase() +
+    category
+      .charAt(0)
+      .toUpperCase() +
     category.slice(1)
   );
 }
+
 
 function formatPriority(
   priority: ApiRequest["priority"],
@@ -116,6 +176,7 @@ function formatPriority(
 
   return values[priority];
 }
+
 
 function formatStatus(
   status: ApiRequest["status"],
@@ -135,36 +196,235 @@ function formatStatus(
   }
 }
 
+
+function formatSlaRemaining(
+  dueAt: string | null,
+  nowMs: number,
+) {
+  if (!dueAt) {
+    return "Not set";
+  }
+
+  const dueMs =
+    parseDbDate(
+      dueAt,
+    ).getTime();
+
+  const difference =
+    dueMs - nowMs;
+
+
+  if (
+    Number.isNaN(dueMs)
+  ) {
+    return "Unknown";
+  }
+
+
+  if (
+    Math.abs(difference) <
+    30_000
+  ) {
+    return "Due now";
+  }
+
+
+  const totalMinutes =
+    Math.ceil(
+      Math.abs(difference) /
+        60_000,
+    );
+
+
+  const days =
+    Math.floor(
+      totalMinutes /
+        (24 * 60),
+    );
+
+
+  const hours =
+    Math.floor(
+      (totalMinutes %
+        (24 * 60)) /
+        60,
+    );
+
+
+  const minutes =
+    totalMinutes % 60;
+
+
+  let timeText = "";
+
+
+  if (days > 0) {
+    timeText =
+      `${days}d ${hours}h`;
+  } else if (hours > 0) {
+    timeText =
+      minutes > 0
+        ? `${hours}h ${minutes}m`
+        : `${hours}h`;
+  } else {
+    timeText =
+      `${minutes} min`;
+  }
+
+
+  if (difference < 0) {
+    return `Overdue ${timeText}`;
+  }
+
+
+  return timeText;
+}
+
+
+function isSlaRisk(
+  dueAt: string | null,
+  nowMs: number,
+) {
+  if (!dueAt) {
+    return false;
+  }
+
+  const dueMs =
+    parseDbDate(
+      dueAt,
+    ).getTime();
+
+
+  if (
+    Number.isNaN(dueMs)
+  ) {
+    return false;
+  }
+
+
+  const oneHourFromNow =
+    nowMs +
+    60 * 60 * 1000;
+
+
+  return (
+    dueMs <= oneHourFromNow
+  );
+}
+
+
 function toRequestRow(
   request: ApiRequest,
+  nowMs: number,
 ): RequestRow {
   return {
-    id: request.id,
-    title: request.title,
-    location: request.location,
-    category: formatCategory(
-      request.category,
-    ),
-    priority: formatPriority(
-      request.priority,
-    ),
-    status: formatStatus(
-      request.status,
-    ),
-    assignee: request.assigneeId
-      ? "Assigned"
-      : "Unassigned",
-    initials: request.assigneeId
-      ? "AS"
-      : "—",
-    sla: request.dueAt
-      ? "Scheduled"
-      : "Not set",
+    id:
+      request.id,
+
+    title:
+      request.title,
+
+    location:
+      request.location,
+
+    category:
+      formatCategory(
+        request.category,
+      ),
+
+    priority:
+      formatPriority(
+        request.priority,
+      ),
+
+    status:
+      formatStatus(
+        request.status,
+      ),
+
+    assignee:
+      request.assigneeId
+        ? "Assigned"
+        : "Unassigned",
+
+    initials:
+      request.assigneeId
+        ? "AS"
+        : "—",
+
+    sla:
+      formatSlaRemaining(
+        request.dueAt,
+        nowMs,
+      ),
+
     risk:
-      request.priority ===
-      "critical",
+      isSlaRisk(
+        request.dueAt,
+        nowMs,
+      ),
   };
 }
+
+
+function getDashboardDate(
+  nowMs: number,
+) {
+  return new Intl.DateTimeFormat(
+    "en-US",
+    {
+      timeZone:
+        OPERATIONS_TIME_ZONE,
+
+      weekday: "long",
+
+      day: "numeric",
+
+      month: "long",
+    },
+  ).format(
+    new Date(nowMs),
+  );
+}
+
+
+function getGreeting(
+  nowMs: number,
+) {
+  const hourText =
+    new Intl.DateTimeFormat(
+      "en-US",
+      {
+        timeZone:
+          OPERATIONS_TIME_ZONE,
+
+        hour: "2-digit",
+
+        hourCycle:
+          "h23",
+      },
+    ).format(
+      new Date(nowMs),
+    );
+
+
+  const hour =
+    Number(hourText);
+
+
+  if (hour < 12) {
+    return "Good morning";
+  }
+
+
+  if (hour < 18) {
+    return "Good afternoon";
+  }
+
+
+  return "Good evening";
+}
+
 
 function Icon({
   name,
@@ -186,6 +446,7 @@ function Icon({
           height="7"
           rx="1"
         />
+
         <rect
           x="14"
           y="3"
@@ -193,6 +454,7 @@ function Icon({
           height="7"
           rx="1"
         />
+
         <rect
           x="3"
           y="14"
@@ -200,6 +462,7 @@ function Icon({
           height="7"
           rx="1"
         />
+
         <rect
           x="14"
           y="14"
@@ -220,11 +483,13 @@ function Icon({
     team: (
       <>
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+
         <circle
           cx="9"
           cy="7"
           r="4"
         />
+
         <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
       </>
     ),
@@ -238,6 +503,7 @@ function Icon({
           height="20"
           rx="1"
         />
+
         <path d="M9 22v-4h6v4M8 6h2M14 6h2M8 10h2M14 10h2M8 14h2M14 14h2" />
       </>
     ),
@@ -253,6 +519,7 @@ function Icon({
           cy="12"
           r="3"
         />
+
         <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.1A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.1A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.15.36.21.74.2 1.1" />
       </>
     ),
@@ -264,6 +531,7 @@ function Icon({
           cy="11"
           r="7"
         />
+
         <path d="m20 20-4-4" />
       </>
     ),
@@ -271,6 +539,7 @@ function Icon({
     bell: (
       <>
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+
         <path d="M10 21h4" />
       </>
     ),
@@ -290,6 +559,7 @@ function Icon({
           cy="12"
           r="9"
         />
+
         <path d="M12 7v5l3 2" />
       </>
     ),
@@ -297,6 +567,7 @@ function Icon({
     warning: (
       <>
         <path d="M10.3 3.6 2.4 18a2 2 0 0 0 1.75 3h15.7a2 2 0 0 0 1.75-3L13.7 3.6a2 2 0 0 0-3.4 0Z" />
+
         <path d="M12 9v4M12 17h.01" />
       </>
     ),
@@ -308,6 +579,7 @@ function Icon({
           cy="12"
           r="9"
         />
+
         <path d="m8 12 2.5 2.5L16 9" />
       </>
     ),
@@ -316,6 +588,7 @@ function Icon({
       <path d="M3 12h4l2-6 4 12 2-6h6" />
     ),
   };
+
 
   return (
     <svg
@@ -334,6 +607,7 @@ function Icon({
   );
 }
 
+
 function MetricCard({
   label,
   value,
@@ -345,6 +619,7 @@ function MetricCard({
   value: string;
   detail: string;
   icon: IconName;
+
   tone:
     | "teal"
     | "orange"
@@ -368,92 +643,196 @@ function MetricCard({
         </p>
 
         <div className="metric-line">
-          <strong>{value}</strong>
-          <span>{detail}</span>
+          <strong>
+            {value}
+          </strong>
+
+          <span>
+            {detail}
+          </span>
         </div>
       </div>
     </article>
   );
 }
 
+
 export default function Home() {
   const [
-    requests,
-    setRequests,
-  ] = useState<RequestRow[]>([]);
+    apiRequests,
+    setApiRequests,
+  ] = useState<ApiRequest[]>(
+    [],
+  );
+
 
   const [
-    activeRequestCount,
-    setActiveRequestCount,
-  ] = useState(0);
+    metrics,
+    setMetrics,
+  ] =
+    useState<DashboardMetrics>({
+      activeRequests: 0,
+      dueToday: 0,
+      slaAtRisk: 0,
+      resolvedThisMonth: 0,
+    });
+
 
   const [
     isLoadingRequests,
     setIsLoadingRequests,
   ] = useState(true);
 
+
   const [
     requestError,
     setRequestError,
   ] = useState("");
 
-  const loadRequests =
-    useCallback(async () => {
-      try {
-        setRequestError("");
 
-        const response =
-          await fetch(
-            "/api/requests",
-            {
-              cache: "no-store",
-            },
+  const [
+    nowMs,
+    setNowMs,
+  ] = useState(
+    Date.now(),
+  );
+
+
+  const loadRequests =
+    useCallback(
+      async () => {
+        try {
+          setRequestError("");
+
+
+          const response =
+            await fetch(
+              "/api/requests",
+              {
+                cache:
+                  "no-store",
+              },
+            );
+
+
+          const result =
+            (await response.json()) as
+              | RequestsResponse
+              | {
+                  error?: string;
+                };
+
+
+          if (!response.ok) {
+            throw new Error(
+              "error" in
+                  result &&
+                result.error
+                ? result.error
+                : "Unable to load requests.",
+            );
+          }
+
+
+          const data =
+            result as RequestsResponse;
+
+
+          setApiRequests(
+            data.requests,
           );
 
-        const result =
-          (await response.json()) as
-            | RequestsResponse
-            | {
-                error?: string;
-              };
 
-        if (!response.ok) {
-          throw new Error(
-            "error" in result &&
-              result.error
-              ? result.error
+          setMetrics(
+            data.metrics,
+          );
+
+
+          setNowMs(
+            Date.now(),
+          );
+        } catch (error) {
+          setRequestError(
+            error instanceof Error
+              ? error.message
               : "Unable to load requests.",
           );
+        } finally {
+          setIsLoadingRequests(
+            false,
+          );
         }
+      },
+      [],
+    );
 
-        const data =
-          result as RequestsResponse;
-
-        setRequests(
-          data.requests.map(
-            toRequestRow,
-          ),
-        );
-
-        setActiveRequestCount(
-          data.count,
-        );
-      } catch (error) {
-        setRequestError(
-          error instanceof Error
-            ? error.message
-            : "Unable to load requests.",
-        );
-      } finally {
-        setIsLoadingRequests(
-          false,
-        );
-      }
-    }, []);
 
   useEffect(() => {
     void loadRequests();
   }, [loadRequests]);
+
+
+  /*
+   * Update visible SLA countdowns
+   * every 30 seconds without
+   * hitting the API again.
+   */
+  useEffect(() => {
+    const timer =
+      window.setInterval(
+        () => {
+          setNowMs(
+            Date.now(),
+          );
+        },
+        30_000,
+      );
+
+
+    return () => {
+      window.clearInterval(
+        timer,
+      );
+    };
+  }, []);
+
+
+  const requests =
+    useMemo(
+      () =>
+        apiRequests.map(
+          (request) =>
+            toRequestRow(
+              request,
+              nowMs,
+            ),
+        ),
+      [
+        apiRequests,
+        nowMs,
+      ],
+    );
+
+
+  const dashboardDate =
+    useMemo(
+      () =>
+        getDashboardDate(
+          nowMs,
+        ),
+      [nowMs],
+    );
+
+
+  const greeting =
+    useMemo(
+      () =>
+        getGreeting(
+          nowMs,
+        ),
+      [nowMs],
+    );
+
 
   return (
     <main className="app-shell">
@@ -476,10 +855,12 @@ export default function Home() {
           </div>
         </div>
 
+
         <nav aria-label="Primary navigation">
           <p className="nav-label">
             Workspace
           </p>
+
 
           {navItems.map(
             (item) => (
@@ -494,21 +875,28 @@ export default function Home() {
                     ? "active"
                     : ""
                 }
-                key={item.label}
+                key={
+                  item.label
+                }
               >
                 <Icon
-                  name={item.icon}
+                  name={
+                    item.icon
+                  }
                 />
 
                 <span>
-                  {item.label}
+                  {
+                    item.label
+                  }
                 </span>
+
 
                 {item.label ===
                   "Requests" && (
                   <em>
                     {
-                      activeRequestCount
+                      metrics.activeRequests
                     }
                   </em>
                 )}
@@ -516,15 +904,20 @@ export default function Home() {
             ),
           )}
 
+
           <p className="nav-label second">
             Management
           </p>
 
           <a href="#system">
             <Icon name="settings" />
-            <span>Settings</span>
+
+            <span>
+              Settings
+            </span>
           </a>
         </nav>
+
 
         <div
           className="sidebar-status"
@@ -542,6 +935,7 @@ export default function Home() {
             </span>
           </div>
         </div>
+
 
         <div className="profile">
           <div className="avatar">
@@ -566,6 +960,7 @@ export default function Home() {
         </div>
       </aside>
 
+
       <section
         className="main-panel"
         id="overview"
@@ -583,6 +978,7 @@ export default function Home() {
             </strong>
           </div>
 
+
           <label className="search-box">
             <Icon
               name="search"
@@ -595,8 +991,11 @@ export default function Home() {
               aria-label="Search"
             />
 
-            <kbd>⌘ K</kbd>
+            <kbd>
+              ⌘ K
+            </kbd>
           </label>
+
 
           <div className="top-actions">
             <button
@@ -604,6 +1003,7 @@ export default function Home() {
               aria-label="Switch language"
             >
               EN{" "}
+
               <span>
                 / العربية
               </span>
@@ -614,6 +1014,7 @@ export default function Home() {
               aria-label="Notifications"
             >
               <Icon name="bell" />
+
               <i />
             </button>
 
@@ -625,15 +1026,17 @@ export default function Home() {
           </div>
         </header>
 
+
         <div className="content">
           <section className="page-heading">
             <div>
               <p className="eyebrow">
-                Sunday, 23 August
+                {dashboardDate}
               </p>
 
               <h1>
-                Good evening, Khalid
+                {greeting},
+                Khalid
               </h1>
 
               <p>
@@ -646,9 +1049,11 @@ export default function Home() {
 
             <div className="live-status">
               <span />
+
               Live operations
             </div>
           </section>
+
 
           <section
             className="metrics"
@@ -656,42 +1061,61 @@ export default function Home() {
           >
             <MetricCard
               label="Active requests"
-              value={String(
-                activeRequestCount,
-              )}
-              detail={
+              value={
                 isLoadingRequests
-                  ? "Loading..."
-                  : "Live from D1"
+                  ? "—"
+                  : String(
+                      metrics.activeRequests,
+                    )
               }
+              detail="Live from D1"
               icon="ticket"
               tone="teal"
             />
 
             <MetricCard
               label="Due today"
-              value="6"
-              detail="2 completed"
+              value={
+                isLoadingRequests
+                  ? "—"
+                  : String(
+                      metrics.dueToday,
+                    )
+              }
+              detail="Riyadh today"
               icon="clock"
               tone="orange"
             />
 
             <MetricCard
               label="SLA at risk"
-              value="3"
-              detail="Needs action"
+              value={
+                isLoadingRequests
+                  ? "—"
+                  : String(
+                      metrics.slaAtRisk,
+                    )
+              }
+              detail="≤ 1h or overdue"
               icon="warning"
               tone="red"
             />
 
             <MetricCard
               label="Resolved this month"
-              value="147"
-              detail="↑ 18%"
+              value={
+                isLoadingRequests
+                  ? "—"
+                  : String(
+                      metrics.resolvedThisMonth,
+                    )
+              }
+              detail="Live from D1"
               icon="check"
               tone="blue"
             />
           </section>
+
 
           <section className="workspace-grid">
             <article
@@ -705,8 +1129,8 @@ export default function Home() {
                   </h2>
 
                   <p>
-                    Live service
-                    requests from D1
+                    Prioritized by
+                    live SLA status
                   </p>
                 </div>
 
@@ -720,29 +1144,43 @@ export default function Home() {
                 </a>
               </div>
 
+
               <div className="table-scroll">
                 <table>
                   <thead>
                     <tr>
-                      <th>Request</th>
-                      <th>Priority</th>
-                      <th>Status</th>
-                      <th>Assignee</th>
+                      <th>
+                        Request
+                      </th>
+
+                      <th>
+                        Priority
+                      </th>
+
+                      <th>
+                        Status
+                      </th>
+
+                      <th>
+                        Assignee
+                      </th>
+
                       <th>
                         SLA remaining
                       </th>
                     </tr>
                   </thead>
 
+
                   <tbody>
                     {isLoadingRequests && (
                       <tr>
                         <td colSpan={5}>
-                          Loading
-                          requests...
+                          Loading requests...
                         </td>
                       </tr>
                     )}
+
 
                     {!isLoadingRequests &&
                       requestError && (
@@ -755,17 +1193,19 @@ export default function Home() {
                         </tr>
                       )}
 
+
                     {!isLoadingRequests &&
                       !requestError &&
                       requests.length ===
                         0 && (
                         <tr>
                           <td colSpan={5}>
-                            No active
-                            requests yet.
+                            No active requests
+                            yet.
                           </td>
                         </tr>
                       )}
+
 
                     {!isLoadingRequests &&
                       !requestError &&
@@ -802,16 +1242,19 @@ export default function Home() {
                               </div>
                             </td>
 
+
                             <td>
                               <span
                                 className={`badge priority ${request.priority.toLowerCase()}`}
                               >
                                 <i />
+
                                 {
                                   request.priority
                                 }
                               </span>
                             </td>
+
 
                             <td>
                               <span
@@ -828,6 +1271,7 @@ export default function Home() {
                               </span>
                             </td>
 
+
                             <td>
                               <div className="assignee">
                                 <span>
@@ -841,6 +1285,7 @@ export default function Home() {
                                 }
                               </div>
                             </td>
+
 
                             <td>
                               <span
@@ -870,6 +1315,7 @@ export default function Home() {
               </div>
             </article>
 
+
             <aside className="side-insights">
               <article className="insight-card">
                 <div className="panel-heading compact">
@@ -880,8 +1326,7 @@ export default function Home() {
 
                     <p>
                       Today&apos;s
-                      technician
-                      workload
+                      technician workload
                     </p>
                   </div>
 
@@ -891,6 +1336,7 @@ export default function Home() {
                     •••
                   </button>
                 </div>
+
 
                 <div className="capacity-ring">
                   <div>
@@ -903,6 +1349,7 @@ export default function Home() {
                     </span>
                   </div>
                 </div>
+
 
                 <div className="capacity-stats">
                   <div>
@@ -937,6 +1384,7 @@ export default function Home() {
                 </div>
               </article>
 
+
               <article className="insight-card health-card">
                 <div className="health-icon">
                   <Icon name="pulse" />
@@ -944,15 +1392,14 @@ export default function Home() {
 
                 <div>
                   <h3>
-                    API & database
-                    ready
+                    API & database ready
                   </h3>
 
                   <p>
-                    ResolveOps is
-                    connected to the
-                    request API and
-                    Cloudflare D1.
+                    ResolveOps is connected
+                    to the request API,
+                    Cloudflare D1, and live
+                    SLA metrics.
                   </p>
 
                   <a href="/api/health">
