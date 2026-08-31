@@ -1,3 +1,4 @@
+import { desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
   organizations,
@@ -9,6 +10,50 @@ import { getChatGPTUser } from "../../chatgpt-auth";
 import { validateCreateRequest } from "../../lib/validate-request";
 
 const ORGANIZATION_ID = "org-resolveops-demo";
+
+
+export async function GET() {
+  try {
+    const db = getDb();
+
+    const rows = await db
+      .select()
+      .from(serviceRequests)
+      .where(
+        eq(
+          serviceRequests.organizationId,
+          ORGANIZATION_ID,
+        ),
+      )
+      .orderBy(desc(serviceRequests.createdAt));
+
+    const activeRequests = rows.filter(
+      (request) =>
+        request.status !== "resolved" &&
+        request.status !== "closed",
+    );
+
+    return Response.json({
+      requests: activeRequests,
+      count: activeRequests.length,
+    });
+  } catch (error) {
+    console.error(
+      "Unable to load service requests",
+      error,
+    );
+
+    return Response.json(
+      {
+        error: "Unable to load requests",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
+
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -35,16 +80,22 @@ export async function POST(request: Request) {
     const db = getDb();
     const authenticatedUser = await getChatGPTUser();
 
-    const email = authenticatedUser?.email ?? "demo@resolveops.local";
+    const email =
+      authenticatedUser?.email ??
+      "demo@resolveops.local";
+
     const fullName =
       authenticatedUser?.fullName ??
       authenticatedUser?.displayName ??
       "Khalid Khubrani";
 
-    const requesterId = `user:${email.toLowerCase()}`;
-    const requestId = `WO-${crypto.randomUUID()
-      .slice(0, 8)
-      .toUpperCase()}`;
+    const requesterId =
+      `user:${email.toLowerCase()}`;
+
+    const requestId =
+      `WO-${crypto.randomUUID()
+        .slice(0, 8)
+        .toUpperCase()}`;
 
     await db
       .insert(organizations)
@@ -82,7 +133,9 @@ export async function POST(request: Request) {
       .returning();
 
     if (!createdRequest) {
-      throw new Error("Database did not return the created request");
+      throw new Error(
+        "Database did not return the created request",
+      );
     }
 
     await db.insert(requestActivity).values({
@@ -97,7 +150,10 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("Unable to create service request", error);
+    console.error(
+      "Unable to create service request",
+      error,
+    );
 
     return Response.json(
       { error: "Unable to create request" },
