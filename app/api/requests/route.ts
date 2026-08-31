@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { getDb } from "../../../db";
 
@@ -26,6 +26,55 @@ const SLA_HOURS = {
   medium: 12,
   low: 24,
 } as const;
+
+
+const REQUEST_STATUSES = [
+  "new",
+  "assigned",
+  "in_progress",
+  "on_hold",
+  "resolved",
+  "closed",
+] as const;
+
+
+type RequestStatus =
+  (typeof REQUEST_STATUSES)[number];
+
+
+function isRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value)
+  );
+}
+
+
+function hasBodyField(
+  body: Record<string, unknown>,
+  field: string,
+) {
+  return Object.prototype.hasOwnProperty.call(
+    body,
+    field,
+  );
+}
+
+
+function isRequestStatus(
+  value: unknown,
+): value is RequestStatus {
+  return (
+    typeof value === "string" &&
+    REQUEST_STATUSES.some(
+      (status) =>
+        status === value,
+    )
+  );
+}
 
 
 function getSlaDeadline(
@@ -516,6 +565,468 @@ export async function POST(
       {
         error:
           "Unable to create request",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
+
+
+export async function PATCH(
+  request: Request,
+) {
+  let body: unknown;
+
+
+  try {
+    body =
+      await request.json();
+  } catch {
+    return Response.json(
+      {
+        error:
+          "Request body must contain valid JSON",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  if (!isRecord(body)) {
+    return Response.json(
+      {
+        error:
+          "Request body must be a JSON object",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  if (
+    typeof body.id !== "string" ||
+    body.id.trim().length === 0
+  ) {
+    return Response.json(
+      {
+        error:
+          "Request id is required",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  const id =
+    body.id.trim();
+
+  const assigneeSupplied =
+    hasBodyField(
+      body,
+      "assigneeId",
+    );
+
+  const statusSupplied =
+    hasBodyField(
+      body,
+      "status",
+    );
+
+
+  if (
+    !assigneeSupplied &&
+    !statusSupplied
+  ) {
+    return Response.json(
+      {
+        error:
+          "Provide assigneeId or status to update",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  let assigneeId:
+    | string
+    | null
+    | undefined;
+
+  if (assigneeSupplied) {
+    const value =
+      body.assigneeId;
+
+    if (value === null) {
+      assigneeId =
+        null;
+    } else if (
+      typeof value === "string" &&
+      value.trim().length > 0
+    ) {
+      assigneeId =
+        value.trim();
+    } else {
+      return Response.json(
+        {
+          error:
+            "assigneeId must be a technician user id or null",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+  }
+
+
+  let status:
+    | RequestStatus
+    | null =
+      null;
+
+  if (statusSupplied) {
+    if (
+      !isRequestStatus(
+        body.status,
+      )
+    ) {
+      return Response.json(
+        {
+          error:
+            "Invalid request status",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+
+    status =
+      body.status;
+  }
+
+
+  try {
+    const db = getDb();
+
+
+    const [currentRequest] =
+      await db
+        .select()
+        .from(serviceRequests)
+        .where(
+          and(
+            eq(
+              serviceRequests.id,
+              id,
+            ),
+            eq(
+              serviceRequests.organizationId,
+              ORGANIZATION_ID,
+            ),
+          ),
+        )
+        .limit(1);
+
+
+    if (!currentRequest) {
+      return Response.json(
+        {
+          error:
+            "Request not found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+
+    let assignedTechnician:
+      | {
+          id: string;
+          fullName: string;
+          email: string;
+        }
+      | null =
+        null;
+
+
+    if (
+      assigneeSupplied &&
+      typeof assigneeId === "string"
+    ) {
+      const [technician] =
+        await db
+          .select({
+            id:
+              users.id,
+
+            fullName:
+              users.fullName,
+
+            email:
+              users.email,
+          })
+          .from(users)
+          .where(
+            and(
+              eq(
+                users.id,
+                assigneeId,
+              ),
+              eq(
+                users.organizationId,
+                ORGANIZATION_ID,
+              ),
+              eq(
+                users.role,
+                "technician",
+              ),
+            ),
+          )
+          .limit(1);
+
+
+      if (!technician) {
+        return Response.json(
+          {
+            error:
+              "assigneeId must reference a technician in this organization",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+
+      assignedTechnician =
+        technician;
+    }
+
+
+    const nextAssigneeId =
+      assigneeSupplied
+        ? assigneeId ?? null
+        : currentRequest.assigneeId;
+
+    let nextStatus =
+      currentRequest.status;
+
+    if (status !== null) {
+      nextStatus =
+        status;
+    }
+
+
+    if (
+      assigneeSupplied &&
+      typeof assigneeId === "string" &&
+      status === null &&
+      currentRequest.status === "new"
+    ) {
+      nextStatus =
+        "assigned";
+    }
+
+
+    if (
+      nextStatus === "assigned" &&
+      !nextAssigneeId
+    ) {
+      return Response.json(
+        {
+          error:
+            "Assigned requests must have an assignee",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+
+    const changes: string[] =
+      [];
+
+    const updateData:
+      Partial<
+        typeof serviceRequests.$inferInsert
+      > =
+        {};
+
+
+    if (
+      nextAssigneeId !==
+      currentRequest.assigneeId
+    ) {
+      updateData.assigneeId =
+        nextAssigneeId;
+
+      changes.push(
+        nextAssigneeId
+          ? `assigned to ${assignedTechnician?.fullName ?? nextAssigneeId}`
+          : "unassigned",
+      );
+    }
+
+
+    if (
+      nextStatus !==
+      currentRequest.status
+    ) {
+      updateData.status =
+        nextStatus;
+
+      changes.push(
+        `status changed from ${currentRequest.status} to ${nextStatus}`,
+      );
+    }
+
+
+    if (changes.length === 0) {
+      return Response.json({
+        request:
+          currentRequest,
+      });
+    }
+
+
+    updateData.updatedAt =
+      new Date().toISOString();
+
+
+    const authenticatedUser =
+      await getChatGPTUser();
+
+
+    const email =
+      authenticatedUser?.email ??
+      "demo@resolveops.local";
+
+    const fullName =
+      authenticatedUser?.fullName ??
+      authenticatedUser?.displayName ??
+      "Khalid Khubrani";
+
+
+    const actorId =
+      `user:${email.toLowerCase()}`;
+
+
+    await db
+      .insert(organizations)
+      .values({
+        id:
+          ORGANIZATION_ID,
+
+        name:
+          "ResolveOps",
+
+        slug:
+          "resolveops-demo",
+      })
+      .onConflictDoNothing();
+
+
+    await db
+      .insert(users)
+      .values({
+        id:
+          actorId,
+
+        organizationId:
+          ORGANIZATION_ID,
+
+        email,
+
+        fullName,
+
+        role:
+          "manager",
+      })
+      .onConflictDoNothing();
+
+
+    const [updatedRequest] =
+      await db
+        .update(
+          serviceRequests,
+        )
+        .set(updateData)
+        .where(
+          and(
+            eq(
+              serviceRequests.id,
+              id,
+            ),
+            eq(
+              serviceRequests.organizationId,
+              ORGANIZATION_ID,
+            ),
+          ),
+        )
+        .returning();
+
+
+    if (!updatedRequest) {
+      return Response.json(
+        {
+          error:
+            "Request not found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+
+    await db
+      .insert(
+        requestActivity,
+      )
+      .values({
+        requestId:
+          id,
+
+        actorId,
+
+        action:
+          "updated",
+
+        detail:
+          changes.join("; "),
+      });
+
+
+    return Response.json({
+      request:
+        updatedRequest,
+    });
+  } catch (error) {
+    console.error(
+      "Unable to update service request",
+      error,
+    );
+
+
+    return Response.json(
+      {
+        error:
+          "Unable to update request",
       },
       {
         status: 500,
