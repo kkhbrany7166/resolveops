@@ -980,6 +980,102 @@ tbody tr.clickable-request-row:active {
 
 
 /* =========================================================
+   Copilot Insight Card
+   ========================================================= */
+
+.copilot-card {
+  padding: 16px;
+
+  background: #f8fcfa;
+  border-color: #d8e8e2;
+}
+
+.copilot-card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.copilot-mark {
+  width: 34px;
+  height: 34px;
+
+  display: grid;
+  place-content: center;
+
+  border-radius: 9px;
+
+  background: #dcefe8;
+  color: var(--teal-dark);
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.copilot-card h3 {
+  margin: 13px 0 6px;
+
+  color: #243630;
+
+  font-size: 12px;
+}
+
+.copilot-card p {
+  margin: 0;
+
+  color: #6d7e78;
+
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.copilot-open-button {
+  width: 100%;
+
+  margin: 15px 0 0;
+}
+
+.copilot-attention-pill,
+.copilot-context-pill {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 22px;
+
+  padding: 0 8px;
+
+  border-radius: 999px;
+
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.copilot-attention-pill.normal {
+  background: #e8f5f0;
+  color: #15715f;
+}
+
+.copilot-attention-pill.watch {
+  background: #fff1df;
+  color: #a96216;
+}
+
+.copilot-attention-pill.urgent {
+  background: #fce9e9;
+  color: #b74242;
+}
+
+.copilot-context-pill {
+  background: #eef2f0;
+  color: #64736e;
+}
+
+
+/* =========================================================
    Dashboard Responsive
    ========================================================= */
 
@@ -1365,6 +1461,324 @@ tbody tr.clickable-request-row:active {
 
 
 /* =========================================================
+   Operations Copilot Modal
+   ========================================================= */
+
+.copilot-modal {
+  width: min(780px, 100%);
+  height: min(720px, calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+.copilot-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+
+  padding-bottom: 18px;
+
+  border-bottom: 1px solid #edf1ef;
+}
+
+.copilot-header p:not(.eyebrow) {
+  margin: 7px 0 0;
+
+  color: #70807a;
+
+  font-size: 12px;
+}
+
+.copilot-thread {
+  min-height: 0;
+
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  margin-top: 18px;
+  padding: 2px 2px 16px;
+
+  overflow-y: auto;
+}
+
+.copilot-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.copilot-empty-state {
+  margin: auto;
+  max-width: 360px;
+
+  text-align: center;
+}
+
+.copilot-empty-state strong {
+  display: block;
+
+  color: #243630;
+
+  font-size: 16px;
+}
+
+.copilot-empty-state p {
+  margin: 8px 0 0;
+
+  color: #6f7e79;
+
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.copilot-message {
+  max-width: 84%;
+
+  padding: 12px 14px;
+
+  border: 1px solid #e0e9e5;
+  border-radius: 12px;
+
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.copilot-message p {
+  margin: 0;
+
+  white-space: pre-wrap;
+}
+
+.copilot-message.user,
+.copilot-user-message {
+  align-self: flex-end;
+
+  border-color: #cfe3dc;
+
+  background: #eef8f4;
+  color: #244940;
+}
+
+.copilot-message.assistant,
+.copilot-assistant-card {
+  align-self: flex-start;
+
+  background: white;
+  color: #273833;
+}
+
+.copilot-response-meta,
+.copilot-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  margin-top: 10px;
+}
+
+.copilot-request-chip {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 24px;
+
+  padding: 0 8px;
+
+  border: 1px solid #d9e6e1;
+  border-radius: 999px;
+
+  background: #f8fbfa;
+  color: #49645c;
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.copilot-actions {
+  margin-top: 12px;
+  padding-top: 11px;
+
+  border-top: 1px solid #edf1ef;
+}
+
+.copilot-actions strong {
+  display: block;
+
+  color: #4c625a;
+
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.copilot-actions ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+
+  color: #596b65;
+}
+
+.copilot-actions li + li {
+  margin-top: 5px;
+}
+
+.copilot-loading {
+  align-self: flex-start;
+
+  padding: 10px 12px;
+
+  border: 1px solid #dbe8e3;
+  border-radius: 999px;
+
+  background: #f8fbfa;
+  color: #5b7169;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.copilot-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  padding-top: 2px;
+}
+
+.copilot-suggestions button {
+  min-height: 32px;
+
+  padding: 0 11px;
+
+  border: 1px solid #d8e5e0;
+  border-radius: 999px;
+
+  background: white;
+  color: #436258;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.copilot-suggestions button:hover:not(:disabled) {
+  border-color: #a8cfc2;
+  background: #f4faf7;
+}
+
+.copilot-suggestions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.copilot-turn-error {
+  display: grid;
+  gap: 12px;
+
+  border: 1px solid #f1c7c7;
+
+  background: #fff5f5;
+  color: #a83d3d;
+
+  font-weight: 600;
+}
+
+.copilot-turn-error button {
+  flex: 0 0 auto;
+  justify-self: start;
+
+  min-height: 30px;
+
+  padding: 0 10px;
+
+  border: 1px solid #ecc0c0;
+  border-radius: 8px;
+
+  background: white;
+  color: #963737;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.copilot-input-row {
+  margin-top: 14px;
+  padding-top: 14px;
+
+  border-top: 1px solid #edf1ef;
+}
+
+.copilot-input-row label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: var(--ink);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.copilot-input-row div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.copilot-input-row textarea {
+  width: 100%;
+  min-height: 54px;
+  max-height: 120px;
+
+  padding: 11px 12px;
+
+  border: 1px solid var(--line);
+  border-radius: 9px;
+
+  background: white;
+  color: var(--ink);
+
+  font-size: 13px;
+  line-height: 1.45;
+
+  resize: vertical;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.copilot-input-row textarea:focus {
+  border-color: var(--teal);
+
+  outline: none;
+
+  box-shadow:
+    0 0 0 3px rgba(19, 125, 105, 0.11);
+}
+
+.copilot-input-row .primary-button {
+  height: 54px;
+  min-width: 82px;
+
+  margin: 0;
+}
+
+
+/* =========================================================
    Request Form
    ========================================================= */
 
@@ -1714,6 +2128,32 @@ tbody tr.clickable-request-row:active {
 
   .request-modal h2 {
     font-size: 22px;
+  }
+
+  .copilot-modal {
+    height: calc(100vh - 24px);
+    max-height: calc(100vh - 24px);
+  }
+
+  .copilot-thread {
+    min-height: 0;
+  }
+
+  .copilot-message {
+    max-width: 100%;
+  }
+
+  .copilot-suggestions {
+    max-height: 86px;
+    overflow-y: auto;
+  }
+
+  .copilot-input-row div {
+    grid-template-columns: 1fr;
+  }
+
+  .copilot-input-row .primary-button {
+    width: 100%;
   }
 
   .management-layout {

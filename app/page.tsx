@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import NewRequestButton from "./components/NewRequestButton";
+import OperationsCopilot from "./components/OperationsCopilot";
 import RequestManagementModal, {
   type Technician,
 } from "./components/RequestManagementModal";
@@ -1542,6 +1543,9 @@ export default function Home() {
 
 
             <aside className="side-insights">
+              <OperationsCopilot />
+
+
               <article className="insight-card">
                 <div className="panel-heading compact">
                   <div>

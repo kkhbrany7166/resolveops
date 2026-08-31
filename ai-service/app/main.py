@@ -2,8 +2,11 @@ from fastapi import FastAPI, HTTPException
 
 from app.models import (
     AnalyzeRequestInput,
+    CopilotInput,
+    CopilotResponse,
     ServiceRequestAnalysis,
 )
+from app.services.copilot import answer_operations_question
 from app.services.classifier import analyze_service_request
 
 
@@ -49,4 +52,33 @@ def analyze_request(
         raise HTTPException(
             status_code=500,
             detail="Unable to analyze service request.",
+        ) from error
+
+
+@app.post(
+    "/copilot",
+    response_model=CopilotResponse,
+)
+def copilot(
+    request: CopilotInput,
+):
+    try:
+        return answer_operations_question(
+            request=request,
+        )
+
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+        ) from error
+
+    except Exception as error:
+        print(
+            f"ResolveOps Copilot failed: {error}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to answer operations question.",
         ) from error
