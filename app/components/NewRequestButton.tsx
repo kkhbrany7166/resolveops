@@ -28,7 +28,13 @@ type AiAnalysis = {
   suggested_response: string;
 };
 
-export default function NewRequestButton() {
+type NewRequestButtonProps = {
+  onRequestCreated?: () => void | Promise<void>;
+};
+
+export default function NewRequestButton({
+  onRequestCreated,
+}: NewRequestButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -173,7 +179,8 @@ export default function NewRequestButton() {
         );
       }
 
-      setIsSubmitted(true);
+      await onRequestCreated?.();
+setIsSubmitted(true);
     } catch (submitError) {
       setError(
         submitError instanceof Error
