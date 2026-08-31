@@ -658,6 +658,20 @@ tbody tr:hover {
   background: #fafcfb;
 }
 
+tbody tr.clickable-request-row {
+  cursor: pointer;
+}
+
+tbody tr.clickable-request-row:focus-visible {
+  outline: 2px solid rgba(19, 125, 105, 0.38);
+  outline-offset: -2px;
+  background: #f5fbf8;
+}
+
+tbody tr.clickable-request-row:active {
+  background: #eef8f4;
+}
+
 .request-title span,
 .request-title strong,
 .request-title small {
@@ -761,6 +775,16 @@ tbody tr:hover {
   background: #f4efe8;
 }
 
+.status.resolved {
+  color: #176d5b;
+  background: #e5f4ef;
+}
+
+.status.closed {
+  color: #5d6965;
+  background: #edf1ef;
+}
+
 
 /* =========================================================
    Assignee / SLA
@@ -784,6 +808,15 @@ tbody tr:hover {
   place-content: center;
   font-size: 7px;
   font-weight: 800;
+}
+
+.assignee.unassigned {
+  color: #8a9591;
+}
+
+.assignee.unassigned span {
+  background: #f0f3f1;
+  color: #9aa6a1;
 }
 
 .sla {
@@ -1112,6 +1145,222 @@ tbody tr:hover {
   font-size: 25px;
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+
+/* =========================================================
+   Request Management Modal
+   ========================================================= */
+
+.management-modal {
+  width: min(860px, 100%);
+}
+
+.management-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.modal-close-button {
+  width: 34px;
+  height: 34px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-content: center;
+
+  border: 1px solid var(--line);
+  border-radius: 8px;
+
+  background: white;
+  color: #65736e;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.modal-close-button:hover {
+  border-color: #ccd8d3;
+  background: #f7f9f8;
+  color: var(--ink);
+}
+
+.management-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.15fr)
+    minmax(260px, 0.85fr);
+  gap: 18px;
+
+  margin-top: 24px;
+}
+
+.management-summary {
+  min-width: 0;
+
+  padding: 18px;
+
+  border: 1px solid #e4ece8;
+  border-radius: 12px;
+
+  background: #fbfdfc;
+}
+
+.management-summary h3 {
+  margin: 0;
+
+  color: #253530;
+
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.management-description {
+  margin: 10px 0 0;
+
+  color: #62736d;
+
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.request-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+
+  margin: 20px 0 0;
+}
+
+.request-detail-grid div {
+  min-width: 0;
+}
+
+.request-detail-grid dt {
+  margin: 0 0 5px;
+
+  color: #87938f;
+
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.request-detail-grid dd {
+  margin: 0;
+
+  color: #253530;
+
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.management-form {
+  align-self: start;
+
+  min-width: 0;
+
+  padding: 18px;
+
+  border: 1px solid #d8e7e1;
+  border-radius: 12px;
+
+  background: #f6fbf9;
+}
+
+.management-form label {
+  display: block;
+
+  color: var(--ink);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.management-form select {
+  box-sizing: border-box;
+
+  width: 100%;
+  min-height: 44px;
+
+  margin: 8px 0 15px;
+  padding: 0 12px;
+
+  border: 1px solid #d7e3df;
+  border-radius: 9px;
+
+  background: white;
+  color: var(--ink);
+
+  font-size: 13px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.management-form select:focus {
+  border-color: var(--teal);
+
+  outline: none;
+
+  box-shadow:
+    0 0 0 3px rgba(19, 125, 105, 0.11);
+}
+
+.management-hint,
+.management-warning,
+.management-removal-note {
+  margin: 0 0 12px;
+
+  padding: 10px 11px;
+
+  border-radius: 9px;
+
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.management-hint {
+  border: 1px solid #dbe8e3;
+  background: white;
+  color: #667770;
+}
+
+.management-warning {
+  border: 1px solid #f0d4b5;
+  background: #fff8ef;
+  color: #986121;
+  font-weight: 600;
+}
+
+.management-removal-note {
+  border: 1px solid #eed0d0;
+  background: #fff6f6;
+  color: #9d3f3f;
+  font-weight: 700;
+}
+
+.management-error {
+  margin-bottom: 12px;
+}
+
+.management-actions {
+  margin-top: 2px;
 }
 
 
@@ -1465,6 +1714,19 @@ tbody tr:hover {
 
   .request-modal h2 {
     font-size: 22px;
+  }
+
+  .management-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .management-summary,
+  .management-form {
+    padding: 16px;
+  }
+
+  .request-detail-grid {
+    grid-template-columns: 1fr;
   }
 
   .request-form {

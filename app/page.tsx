@@ -5,10 +5,14 @@ import {
   useEffect,
   useMemo,
   useState,
+  type KeyboardEvent,
   type ReactNode,
 } from "react";
 
 import NewRequestButton from "./components/NewRequestButton";
+import RequestManagementModal, {
+  type Technician,
+} from "./components/RequestManagementModal";
 
 
 const OPERATIONS_TIME_ZONE =
@@ -80,7 +84,13 @@ type RequestsResponse = {
 };
 
 
+type TechniciansResponse = {
+  technicians: Technician[];
+};
+
+
 type RequestRow = {
+  request: ApiRequest;
   id: string;
   title: string;
   location: string;
@@ -96,7 +106,9 @@ type RequestRow = {
     | "New"
     | "Assigned"
     | "In progress"
-    | "On hold";
+    | "On hold"
+    | "Resolved"
+    | "Closed";
 
   assignee: string;
   initials: string;
@@ -190,6 +202,12 @@ function formatStatus(
 
     case "on_hold":
       return "On hold";
+
+    case "resolved":
+      return "Resolved";
+
+    case "closed":
+      return "Closed";
 
     default:
       return "New";
@@ -313,11 +331,37 @@ function isSlaRisk(
 }
 
 
+function getTechnicianInitial(
+  fullName: string,
+) {
+  const trimmedName =
+    fullName.trim();
+
+  if (!trimmedName) {
+    return "?";
+  }
+
+  return trimmedName
+    .charAt(0)
+    .toUpperCase();
+}
+
+
 function toRequestRow(
   request: ApiRequest,
   nowMs: number,
+  technicianById: Map<string, Technician>,
 ): RequestRow {
+  const technician =
+    request.assigneeId
+      ? technicianById.get(
+          request.assigneeId,
+        )
+      : null;
+
   return {
+    request,
+
     id:
       request.id,
 
@@ -344,12 +388,17 @@ function toRequestRow(
 
     assignee:
       request.assigneeId
-        ? "Assigned"
+        ? technician?.fullName ??
+          "Assigned"
         : "Unassigned",
 
     initials:
       request.assigneeId
-        ? "AS"
+        ? technician
+          ? getTechnicianInitial(
+              technician.fullName,
+            )
+          : "?"
         : "—",
 
     sla:
@@ -691,6 +740,34 @@ export default function Home() {
 
 
   const [
+    technicians,
+    setTechnicians,
+  ] = useState<Technician[]>(
+    [],
+  );
+
+
+  const [
+    isLoadingTechnicians,
+    setIsLoadingTechnicians,
+  ] = useState(true);
+
+
+  const [
+    technicianError,
+    setTechnicianError,
+  ] = useState("");
+
+
+  const [
+    selectedRequestId,
+    setSelectedRequestId,
+  ] = useState<string | null>(
+    null,
+  );
+
+
+  const [
     nowMs,
     setNowMs,
   ] = useState(
@@ -767,9 +844,76 @@ export default function Home() {
     );
 
 
+  const loadTechnicians =
+    useCallback(
+      async () => {
+        try {
+          setTechnicianError("");
+          setIsLoadingTechnicians(
+            true,
+          );
+
+
+          const response =
+            await fetch(
+              "/api/technicians",
+              {
+                cache:
+                  "no-store",
+              },
+            );
+
+
+          const result =
+            (await response.json()) as
+              | TechniciansResponse
+              | {
+                  error?: string;
+                };
+
+
+          if (!response.ok) {
+            throw new Error(
+              "error" in
+                  result &&
+                result.error
+                ? result.error
+                : "Unable to load technicians.",
+            );
+          }
+
+
+          const data =
+            result as TechniciansResponse;
+
+
+          setTechnicians(
+            data.technicians,
+          );
+        } catch (error) {
+          setTechnicianError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load technicians.",
+          );
+        } finally {
+          setIsLoadingTechnicians(
+            false,
+          );
+        }
+      },
+      [],
+    );
+
+
   useEffect(() => {
     void loadRequests();
   }, [loadRequests]);
+
+
+  useEffect(() => {
+    void loadTechnicians();
+  }, [loadTechnicians]);
 
 
   /*
@@ -797,6 +941,21 @@ export default function Home() {
   }, []);
 
 
+  const technicianById =
+    useMemo(
+      () =>
+        new Map(
+          technicians.map(
+            (technician) => [
+              technician.id,
+              technician,
+            ],
+          ),
+        ),
+      [technicians],
+    );
+
+
   const requests =
     useMemo(
       () =>
@@ -805,13 +964,39 @@ export default function Home() {
             toRequestRow(
               request,
               nowMs,
+              technicianById,
             ),
         ),
       [
         apiRequests,
         nowMs,
+        technicianById,
       ],
     );
+
+
+  const selectedRequest =
+    useMemo(
+      () =>
+        apiRequests.find(
+          (request) =>
+            request.id ===
+            selectedRequestId,
+        ) ?? null,
+      [
+        apiRequests,
+        selectedRequestId,
+      ],
+    );
+
+
+  const selectedRequestSla =
+    selectedRequest
+      ? formatSlaRemaining(
+          selectedRequest.dueAt,
+          nowMs,
+        )
+      : "";
 
 
   const dashboardDate =
@@ -832,6 +1017,22 @@ export default function Home() {
         ),
       [nowMs],
     );
+
+
+  function handleRequestRowKeyDown(
+    event: KeyboardEvent<HTMLTableRowElement>,
+    requestId: string,
+  ) {
+    if (
+      event.key === "Enter" ||
+      event.key === " "
+    ) {
+      event.preventDefault();
+      setSelectedRequestId(
+        requestId,
+      );
+    }
+  }
 
 
   return (
@@ -1215,6 +1416,23 @@ export default function Home() {
                             key={
                               request.id
                             }
+                            className="clickable-request-row"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Manage request ${request.id}: ${request.title}`}
+                            onClick={() =>
+                              setSelectedRequestId(
+                                request.id,
+                              )
+                            }
+                            onKeyDown={(
+                              event,
+                            ) =>
+                              handleRequestRowKeyDown(
+                                event,
+                                request.id,
+                              )
+                            }
                           >
                             <td>
                               <div className="request-title">
@@ -1273,7 +1491,14 @@ export default function Home() {
 
 
                             <td>
-                              <div className="assignee">
+                              <div
+                                className={`assignee ${
+                                  request.assignee ===
+                                  "Unassigned"
+                                    ? "unassigned"
+                                    : ""
+                                }`}
+                              >
                                 <span>
                                   {
                                     request.initials
@@ -1416,6 +1641,26 @@ export default function Home() {
           </section>
         </div>
       </section>
+
+      <RequestManagementModal
+        request={selectedRequest}
+        technicians={technicians}
+        isLoadingTechnicians={
+          isLoadingTechnicians
+        }
+        technicianError={
+          technicianError
+        }
+        slaRemaining={
+          selectedRequestSla
+        }
+        onClose={() =>
+          setSelectedRequestId(
+            null,
+          )
+        }
+        onUpdated={loadRequests}
+      />
     </main>
   );
 }
